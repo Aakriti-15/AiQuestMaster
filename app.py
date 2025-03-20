@@ -1,5 +1,8 @@
 import os
 import logging
+import json
+import random
+from datetime import datetime
 from flask import Flask, render_template, jsonify, request, redirect, url_for, flash
 import numpy as np
 from rl_quest_gen.environment import GameEnvironment
@@ -22,11 +25,147 @@ agent = QuestGenerationAgent(env, quest_model)
 
 @app.route('/')
 def index():
-    """Home page for the quest generation system."""
-    redirect_to_gen = request.args.get('auto_generate', False)
-    if redirect_to_gen:
-        return redirect(url_for('generate_page'))
-    return render_template('index.html')
+    """Home page - redirects to adventure game."""
+    return redirect(url_for('adventure_game'))
+
+@app.route('/adventure')
+def adventure_game():
+    """Interactive adventure game page."""
+    return render_template('adventure_game.html')
+
+@app.route('/api/adventure/generate_scenario', methods=['POST'])
+def generate_scenario():
+    """Generate a new scenario for the adventure game."""
+    try:
+        # Get parameters
+        theme = request.json.get('theme', 'fantasy')
+        previous_choice = request.json.get('previous_choice', None)
+        player_state = request.json.get('player_state', {})
+        history = request.json.get('history', [])
+
+        # In a production app, this would use our RL model to generate the next scenario
+        # For now, we'll use pre-defined templates and adapt them based on inputs
+        
+        # Generate scenario options based on theme
+        scenario_templates = {
+            'fantasy': [
+                {
+                    'text': "You find yourself standing at the entrance of a dark cave. Mysterious sounds echo from within, and you notice strange markings carved into the rocks nearby. A cool breeze flows from the cave, carrying an unfamiliar scent.",
+                    'choices': [
+                        {"id": "enter_cave", "text": "Enter the cave cautiously"},
+                        {"id": "examine_markings", "text": "Examine the strange markings more closely"},
+                        {"id": "look_around", "text": "Look around for other paths or signs"}
+                    ]
+                },
+                {
+                    'text': "A thick forest surrounds you, sunlight filtering through the dense canopy above. The path ahead splits around an ancient oak tree, its trunk wider than three men standing side by side. There's a small hollow in the tree that seems unnatural.",
+                    'choices': [
+                        {"id": "take_left_path", "text": "Take the left path deeper into the forest"},
+                        {"id": "take_right_path", "text": "Take the right path toward a clearing"},
+                        {"id": "examine_tree", "text": "Investigate the hollow in the ancient oak"}
+                    ]
+                },
+                {
+                    'text': "The village square is bustling with activity as locals prepare for the harvest festival. An old man with a silver beard watches you from beside the well, his eyes showing recognition though you've never met. Near the tavern, a group of armored guards speak in hushed voices.",
+                    'choices': [
+                        {"id": "talk_to_old_man", "text": "Approach the old man by the well"},
+                        {"id": "listen_to_guards", "text": "Try to overhear what the guards are discussing"},
+                        {"id": "enter_tavern", "text": "Enter the tavern to gather information"}
+                    ]
+                }
+            ],
+            'sci-fi': [
+                {
+                    'text': "The space station's warning lights flash red as the emergency siren blares through the corridors. Through the viewport, you see debris from what appears to be a destroyed ship floating in space. Your communication console beeps with an incoming transmission.",
+                    'choices': [
+                        {"id": "answer_transmission", "text": "Answer the incoming transmission"},
+                        {"id": "check_damage", "text": "Check the station's damage reports"},
+                        {"id": "prepare_escape", "text": "Prepare the escape pod for possible evacuation"}
+                    ]
+                },
+                {
+                    'text': "The neon lights of New Shanghai flicker overhead as rain pours down on the crowded streets. Your augmented reality display highlights a suspicious figure ducking into an alley. Your mission target is somewhere in this district, according to your handler.",
+                    'choices': [
+                        {"id": "follow_figure", "text": "Follow the suspicious figure into the alley"},
+                        {"id": "scan_crowd", "text": "Use enhanced scanner to analyze the crowd"},
+                        {"id": "contact_handler", "text": "Contact your handler for updated instructions"}
+                    ]
+                },
+                {
+                    'text': "The laboratory door slides open with a soft hiss. Inside, holographic displays show data streams and molecular structures floating in the air. A synthetic assistant looks up from a workstation. 'Authorization required for further access,' it states in a monotone voice.",
+                    'choices': [
+                        {"id": "show_credentials", "text": "Present your credentials to the synthetic assistant"},
+                        {"id": "override_system", "text": "Attempt to override the security system"},
+                        {"id": "bluff", "text": "Bluff your way past with confidence and technical jargon"}
+                    ]
+                }
+            ],
+            'western': [
+                {
+                    'text': "The dusty main street of Redemption Creek stretches before you, the afternoon sun casting long shadows from the wooden buildings on either side. From the saloon comes the tinkling of a poorly-tuned piano. Outside the sheriff's office, a notice board displays several wanted posters.",
+                    'choices': [
+                        {"id": "enter_saloon", "text": "Push through the swinging doors of the saloon"},
+                        {"id": "check_wanted", "text": "Examine the wanted posters outside the sheriff's office"},
+                        {"id": "visit_general_store", "text": "Head to the general store for supplies"}
+                    ]
+                },
+                {
+                    'text': "Your horse's hooves kick up dust from the trail as you approach the canyon. Below, a river snakes through the red rock. In the distance, you spot smoke rising - perhaps a campfire. Your canteen is running low on water.",
+                    'choices': [
+                        {"id": "investigate_smoke", "text": "Ride toward the smoke to investigate"},
+                        {"id": "descend_to_river", "text": "Find a path down to the river to refill your canteen"},
+                        {"id": "continue_journey", "text": "Continue on your current path through the canyon"}
+                    ]
+                },
+                {
+                    'text': "The mining camp is alive with activity despite the late hour. Rough-looking men gather around fires, sharing bottles and stories. A large tent at the edge of camp seems to serve as some kind of headquarters, with armed guards posted outside.",
+                    'choices': [
+                        {"id": "join_campfire", "text": "Approach one of the campfires to socialize"},
+                        {"id": "approach_tent", "text": "Walk toward the guarded tent to learn more"},
+                        {"id": "observe_quietly", "text": "Find a quiet spot to observe the camp before making a move"}
+                    ]
+                }
+            ]
+        }
+        
+        # Select a scenario based on previous choice or randomly if it's the first one
+        scenarios = scenario_templates.get(theme, scenario_templates['fantasy'])
+        
+        if previous_choice:
+            # In a real implementation, this would use our RL model to select or generate
+            # a scenario based on the player's previous choice
+            # For demo, we'll just pick a random one
+            scenario = random.choice(scenarios)
+        else:
+            # For first scenario, pick first in list to ensure consistent starting point
+            scenario = scenarios[0]
+        
+        # Add any consequences based on previous choice
+        consequences = {}
+        if previous_choice:
+            # Risky choices might affect health
+            if previous_choice in ['enter_cave', 'follow_figure', 'investigate_smoke']:
+                consequences['health_change'] = -5
+                consequences['xp_change'] = 10
+            else:
+                consequences['xp_change'] = 5
+            
+            # Some choices might add items
+            if previous_choice in ['examine_tree', 'check_damage', 'visit_general_store']:
+                consequences['new_item'] = {
+                    'id': f"item_{random.randint(1000, 9999)}",
+                    'name': "Mysterious Object",
+                    'description': "Something you found that might be useful later."
+                }
+        
+        return jsonify({
+            'success': True,
+            'scenario': scenario,
+            'consequences': consequences
+        })
+    except Exception as e:
+        logger.error(f"Scenario generation error: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error generating scenario: {str(e)}'})
 
 @app.route('/generate')
 def generate_page():

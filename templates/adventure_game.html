@@ -1,0 +1,544 @@
+{% extends "layout.html" %}
+
+{% block title %}Adventure Game{% endblock %}
+
+{% block content %}
+<div class="game-container">
+    <div class="adventure-header mb-4">
+        <h2 class="adventure-title text-center mb-4">AI Adventure Game</h2>
+        <div class="progress mb-3">
+            <div id="health-bar" class="progress-bar bg-danger" role="progressbar" style="width: 100%" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100"></div>
+        </div>
+        <div class="stats-bar d-flex justify-content-between mb-4">
+            <div class="stat-item">
+                <span data-feather="heart" class="stat-icon text-danger"></span>
+                <span id="health-stat">100</span>
+            </div>
+            <div class="stat-item">
+                <span data-feather="award" class="stat-icon text-warning"></span>
+                <span id="xp-stat">0</span>
+            </div>
+            <div class="stat-item">
+                <span data-feather="shield" class="stat-icon text-info"></span>
+                <span id="defense-stat">10</span>
+            </div>
+            <div class="stat-item">
+                <span data-feather="zap" class="stat-icon text-success"></span>
+                <span id="attack-stat">10</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card story-card mb-4">
+        <div class="card-body">
+            <div id="story-container">
+                <p id="loading-text" class="text-center py-5">
+                    <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                    Creating your adventure...
+                </p>
+                <div id="story-content" style="display: none;">
+                    <p class="story-text" id="current-scenario"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="choice-container" class="mb-4" style="display: none;">
+        <h5 class="mb-3">What will you do?</h5>
+        <div id="choices-list" class="d-grid gap-2"></div>
+    </div>
+
+    <div id="game-over-container" style="display: none;">
+        <div class="alert alert-danger">
+            <h4 class="alert-heading">Game Over!</h4>
+            <p id="game-over-message"></p>
+            <hr>
+            <button id="restart-button" class="btn btn-danger">
+                <span data-feather="refresh-cw" class="me-2"></span>
+                Start New Adventure
+            </button>
+        </div>
+    </div>
+
+    <div class="adventure-footer d-flex justify-content-between mt-4">
+        <div>
+            <button id="start-adventure" class="btn btn-primary">
+                <span data-feather="play" class="me-2"></span>
+                Start Adventure
+            </button>
+            
+            <button class="btn btn-outline-secondary ms-2" data-bs-toggle="modal" data-bs-target="#inventory-modal">
+                <span data-feather="package" class="me-2"></span>
+                Inventory
+            </button>
+        </div>
+        
+        <div class="theme-selector btn-group" role="group">
+            <input type="radio" class="btn-check" name="theme" id="theme-fantasy" value="fantasy" checked>
+            <label class="btn btn-outline-secondary" for="theme-fantasy">Fantasy</label>
+            
+            <input type="radio" class="btn-check" name="theme" id="theme-sci-fi" value="sci-fi">
+            <label class="btn btn-outline-secondary" for="theme-sci-fi">Sci-Fi</label>
+            
+            <input type="radio" class="btn-check" name="theme" id="theme-western" value="western">
+            <label class="btn btn-outline-secondary" for="theme-western">Western</label>
+        </div>
+        
+        <button class="btn btn-outline-secondary" id="save-adventure">
+            <span data-feather="save" class="me-2"></span>
+            Save Progress
+        </button>
+    </div>
+
+    <div id="inventory-modal" class="modal fade" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Your Inventory</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="inventory-list" class="list-group">
+                        <div class="text-center text-muted py-4">Your inventory is empty</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .game-container {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    
+    .story-card {
+        min-height: 300px;
+        border: none;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        background-color: rgba(255, 255, 255, 0.05);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .story-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 5px;
+        background: linear-gradient(90deg, #7952b3, #0dcaf0);
+    }
+    
+    .story-text {
+        font-size: 1.1rem;
+        line-height: 1.6;
+    }
+    
+    .choice-button {
+        text-align: left;
+        padding: 15px;
+        font-size: 1.05rem;
+        background: rgba(255, 255, 255, 0.05);
+        border: 2px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .choice-button:hover {
+        transform: translateY(-3px);
+        background: rgba(var(--bs-primary-rgb), 0.1);
+        border-color: var(--bs-primary);
+    }
+    
+    .stat-item {
+        display: flex;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 8px 15px;
+        border-radius: 50px;
+    }
+    
+    .stat-icon {
+        margin-right: 8px;
+    }
+    
+    .inventory-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .inventory-item-name {
+        font-weight: bold;
+    }
+    
+    .inventory-item-description {
+        font-size: 0.9rem;
+        color: var(--bs-secondary-color);
+    }
+    
+    .adventure-title {
+        background: linear-gradient(90deg, #7952b3, #0dcaf0);
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        font-weight: bold;
+    }
+    
+    /* Typing effect */
+    .typing-effect {
+        border-right: 0.15em solid var(--bs-primary);
+        white-space: nowrap;
+        overflow: hidden;
+        animation: typing 3s steps(40, end), blink-caret 0.75s step-end infinite;
+    }
+    
+    @keyframes typing {
+        from { width: 0 }
+        to { width: 100% }
+    }
+    
+    @keyframes blink-caret {
+        from, to { border-color: transparent }
+        50% { border-color: var(--bs-primary) }
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Game state
+        const gameState = {
+            health: 100,
+            xp: 0,
+            defense: 10,
+            attack: 10,
+            inventory: [],
+            history: [],
+            currentScenario: null,
+            choices: []
+        };
+        
+        // DOM Elements
+        const startButton = document.getElementById('start-adventure');
+        const storyContent = document.getElementById('story-content');
+        const currentScenario = document.getElementById('current-scenario');
+        const loadingText = document.getElementById('loading-text');
+        const choiceContainer = document.getElementById('choice-container');
+        const choicesList = document.getElementById('choices-list');
+        const healthBar = document.getElementById('health-bar');
+        const healthStat = document.getElementById('health-stat');
+        const xpStat = document.getElementById('xp-stat');
+        const defenseStat = document.getElementById('defense-stat');
+        const attackStat = document.getElementById('attack-stat');
+        const gameOverContainer = document.getElementById('game-over-container');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const restartButton = document.getElementById('restart-button');
+        const saveButton = document.getElementById('save-adventure');
+        
+        // Start an adventure
+        startButton.addEventListener('click', function() {
+            startAdventure();
+        });
+        
+        // Restart the game
+        restartButton.addEventListener('click', function() {
+            resetGameState();
+            gameOverContainer.style.display = 'none';
+            startAdventure();
+        });
+        
+        // Save adventure progress
+        saveButton.addEventListener('click', function() {
+            saveGame();
+        });
+        
+        // Function to start a new adventure
+        function startAdventure() {
+            // Show loading, hide story
+            loadingText.style.display = 'block';
+            storyContent.style.display = 'none';
+            choiceContainer.style.display = 'none';
+            
+            // Get selected theme
+            const theme = document.querySelector('input[name="theme"]:checked').value;
+            
+            // Generate initial scenario
+            generateScenario(theme, null);
+        }
+        
+        // Function to generate a new scenario
+        function generateScenario(theme, previousChoice) {
+            // Create the request data
+            const requestData = {
+                theme: theme,
+                previous_choice: previousChoice,
+                player_state: {
+                    health: gameState.health,
+                    xp: gameState.xp,
+                    defense: gameState.defense,
+                    attack: gameState.attack,
+                    inventory: gameState.inventory
+                },
+                history: gameState.history
+            };
+            
+            // Call our API endpoint
+            fetch('/api/adventure/generate_scenario', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Process any consequences from previous choice
+                    if (data.consequences) {
+                        processConsequences(data.consequences);
+                    }
+                    
+                    // Get the scenario
+                    const scenario = data.scenario;
+                    
+                    // Update game state
+                    gameState.currentScenario = scenario.text;
+                    gameState.choices = scenario.choices;
+                    gameState.history.push(scenario.text);
+                    
+                    // Update UI
+                    displayScenario(scenario.text, scenario.choices);
+                    
+                    // Hide loading
+                    loadingText.style.display = 'none';
+                    storyContent.style.display = 'block';
+                } else {
+                    // Handle error
+                    console.error('Error generating scenario:', data.message);
+                    gameOver("An error occurred in your adventure. Please try again.");
+                }
+            })
+            .catch(error => {
+                console.error('Network error:', error);
+                gameOver("Connection lost. Please try your adventure again.");
+            });
+        }
+        
+        // Function to process consequences from the server
+        function processConsequences(consequences) {
+            // Update health if needed
+            if (consequences.health_change) {
+                gameState.health = Math.max(0, Math.min(100, gameState.health + consequences.health_change));
+                
+                // Check for game over
+                if (gameState.health <= 0) {
+                    setTimeout(() => {
+                        gameOver("Your health has reached zero. Your adventure ends here.");
+                    }, 1000);
+                }
+            }
+            
+            // Add XP if provided
+            if (consequences.xp_change) {
+                gameState.xp += consequences.xp_change;
+            }
+            
+            // Add items to inventory if provided
+            if (consequences.new_item) {
+                gameState.inventory.push(consequences.new_item);
+                
+                // Show notification of item pickup
+                const itemName = consequences.new_item.name;
+                alert(`You found: ${itemName}`);
+                
+                // Update inventory display
+                updateInventoryDisplay();
+            }
+            
+            // Update stats display
+            updateStats();
+        }
+        
+        // Function to update the inventory display
+        function updateInventoryDisplay() {
+            const inventoryList = document.getElementById('inventory-list');
+            
+            // Clear current inventory display
+            inventoryList.innerHTML = '';
+            
+            // Check if inventory is empty
+            if (gameState.inventory.length === 0) {
+                inventoryList.innerHTML = '<div class="text-center text-muted py-4">Your inventory is empty</div>';
+                return;
+            }
+            
+            // Add each item to the display
+            gameState.inventory.forEach((item, index) => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'list-group-item inventory-item';
+                
+                // Get icon based on item type or default to package
+                let icon = 'package';
+                if (item.id.includes('weapon')) icon = 'sword';
+                if (item.id.includes('potion')) icon = 'droplet';
+                if (item.id.includes('map')) icon = 'map';
+                if (item.id.includes('crystal')) icon = 'hexagon';
+                if (item.id.includes('key')) icon = 'key';
+                
+                itemElement.innerHTML = `
+                    <div>
+                        <span data-feather="${icon}" class="me-2"></span>
+                        <span class="inventory-item-name">${item.name}</span>
+                        <p class="inventory-item-description mb-0">${item.description || ""}</p>
+                    </div>
+                    ${item.value ? '<span class="badge bg-info">Value: ' + item.value + '</span>' : ''}
+                `;
+                
+                inventoryList.appendChild(itemElement);
+            });
+            
+            // Initialize feather icons for new elements
+            feather.replace();
+        }
+        
+        // Function to display a scenario
+        function displayScenario(text, choices) {
+            // Update scenario text
+            currentScenario.textContent = text;
+            
+            // Clear existing choices
+            choicesList.innerHTML = '';
+            
+            // Add new choices
+            choices.forEach(choice => {
+                const button = document.createElement('button');
+                button.className = 'btn choice-button mb-2';
+                button.textContent = choice.text;
+                button.setAttribute('data-choice-id', choice.id);
+                
+                button.addEventListener('click', function() {
+                    makeChoice(choice.id);
+                });
+                
+                choicesList.appendChild(button);
+            });
+            
+            // Show choices
+            choiceContainer.style.display = 'block';
+        }
+        
+        // Function to handle player choice
+        function makeChoice(choiceId) {
+            // Show loading, hide choices
+            loadingText.style.display = 'block';
+            storyContent.style.display = 'none';
+            choiceContainer.style.display = 'none';
+            
+            // Get the theme
+            const theme = document.querySelector('input[name="theme"]:checked').value;
+            
+            // Process consequences of the choice
+            processChoiceConsequences(choiceId);
+            
+            // Generate next scenario based on choice
+            generateScenario(theme, choiceId);
+        }
+        
+        // Function to process consequences of a choice
+        function processChoiceConsequences(choiceId) {
+            // This is now handled by the server's response in processConsequences
+            // This function is kept for potential client-side effects in the future
+            
+            // For now, we'll just log the choice
+            console.log("Player chose:", choiceId);
+        }
+        
+        // Function to add items to inventory
+        function addToInventory(item) {
+            gameState.inventory.push(item);
+            
+            // Show notification of item pickup
+            // This would be a toast or notification in a full implementation
+        }
+        
+        // Function to update stats display
+        function updateStats() {
+            healthStat.textContent = gameState.health;
+            xpStat.textContent = gameState.xp;
+            defenseStat.textContent = gameState.defense;
+            attackStat.textContent = gameState.attack;
+            
+            // Update health bar
+            const healthPercent = Math.max(0, gameState.health);
+            healthBar.style.width = `${healthPercent}%`;
+            healthBar.setAttribute('aria-valuenow', healthPercent);
+        }
+        
+        // Function to handle game over
+        function gameOver(message) {
+            gameOverMessage.textContent = message;
+            gameOverContainer.style.display = 'block';
+            choiceContainer.style.display = 'none';
+        }
+        
+        // Function to reset game state
+        function resetGameState() {
+            gameState.health = 100;
+            gameState.xp = 0;
+            gameState.defense = 10;
+            gameState.attack = 10;
+            gameState.inventory = [];
+            gameState.history = [];
+            gameState.currentScenario = null;
+            gameState.choices = [];
+            
+            updateStats();
+        }
+        
+        // Function to save game progress
+        function saveGame() {
+            // In a real implementation, this would save to server or localStorage
+            alert('Game progress saved!');
+            
+            // Simulate saving to localStorage
+            localStorage.setItem('adventureGameSave', JSON.stringify(gameState));
+        }
+        
+        // Function to load saved game
+        function loadGame() {
+            const savedGame = localStorage.getItem('adventureGameSave');
+            if (savedGame) {
+                const parsedSave = JSON.parse(savedGame);
+                Object.assign(gameState, parsedSave);
+                updateStats();
+                
+                // If there was a current scenario, display it
+                if (gameState.currentScenario && gameState.choices) {
+                    displayScenario(gameState.currentScenario, gameState.choices);
+                    loadingText.style.display = 'none';
+                    storyContent.style.display = 'block';
+                }
+                
+                return true;
+            }
+            return false;
+        }
+        
+        // Try to load saved game on page load
+        if (!loadGame()) {
+            // If no saved game, initialize and setup for new game
+            resetGameState();
+        }
+    });
+</script>
+{% endblock %}
