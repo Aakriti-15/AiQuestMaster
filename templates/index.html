@@ -1,0 +1,149 @@
+{% extends "layout.html" %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<div class="px-4 py-5 my-5 text-center">
+    <div class="mb-4">
+        <span data-feather="compass" style="width: 64px; height: 64px;"></span>
+    </div>
+    <h1 class="display-5 fw-bold text-body-emphasis">Quest Generation RL</h1>
+    <div class="col-lg-8 mx-auto">
+        <p class="lead mb-4">
+            A reinforcement learning system for procedural quest generation in games.
+            This system uses RL techniques to learn how to generate engaging, coherent, and novel quests.
+        </p>
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+            <a href="/train" class="btn btn-primary btn-lg px-4 gap-3">
+                <span data-feather="cpu" class="me-1"></span> Train Agent
+            </a>
+            <a href="/generate" class="btn btn-outline-secondary btn-lg px-4">
+                <span data-feather="plus-circle" class="me-1"></span> Generate Quest
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 py-5">
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <span data-feather="cpu" class="me-2"></span>
+                    Reinforcement Learning
+                </h5>
+                <p class="card-text">
+                    The system uses a reinforcement learning agent powered by Proximal Policy Optimization (PPO) to learn optimal quest generation strategies from experience.
+                </p>
+                <ul>
+                    <li>Learning from feedback</li>
+                    <li>Adapting to player preferences</li>
+                    <li>Balancing complexity and feasibility</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <span data-feather="box" class="me-2"></span>
+                    Quest Structure
+                </h5>
+                <p class="card-text">
+                    Quests are generated with coherent structures including:
+                </p>
+                <ul>
+                    <li>Diverse quest types (fetch, kill, escort, etc.)</li>
+                    <li>Multiple objectives with dependencies</li>
+                    <li>Appropriate rewards based on difficulty</li>
+                    <li>Narrative elements and theming</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card h-100">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <span data-feather="bar-chart-2" class="me-2"></span>
+                    Quality Metrics
+                </h5>
+                <p class="card-text">
+                    Generated quests are evaluated on several metrics:
+                </p>
+                <ul>
+                    <li>Complexity: balance of objectives and challenge</li>
+                    <li>Coherence: logical consistency of quest elements</li>
+                    <li>Novelty: uniqueness compared to previous quests</li>
+                    <li>Feasibility: can be completed with available resources</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row my-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">How It Works</h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <ol class="mb-0">
+                            <li class="mb-3">
+                                <strong>Environment Simulation</strong>: A virtual game world provides the context for quest generation, with locations, NPCs, items, and game state.
+                            </li>
+                            <li class="mb-3">
+                                <strong>RL Agent Training</strong>: The agent learns to make decisions about quest type, objectives, difficulty, and rewards based on feedback.
+                            </li>
+                            <li class="mb-3">
+                                <strong>Quest Assembly</strong>: Actions chosen by the agent are transformed into structured quests with narrative elements.
+                            </li>
+                            <li class="mb-3">
+                                <strong>Quality Evaluation</strong>: Generated quests are scored on metrics like complexity, coherence, and novelty.
+                            </li>
+                            <li>
+                                <strong>Continuous Learning</strong>: The system improves over time through additional training and feedback.
+                            </li>
+                        </ol>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="text-center">
+                            <div class="d-inline-block p-4 bg-dark rounded">
+                                <svg width="300" height="200" viewBox="0 0 300 200">
+                                    <!-- Game World -->
+                                    <rect x="10" y="10" width="280" height="180" rx="10" fill="none" stroke="var(--bs-info)" stroke-width="2" />
+                                    
+                                    <!-- Agent -->
+                                    <circle cx="75" cy="100" r="30" fill="var(--bs-primary)" opacity="0.7" />
+                                    <text x="75" y="105" text-anchor="middle" fill="white" font-size="12">RL Agent</text>
+                                    
+                                    <!-- Quest -->
+                                    <rect x="175" y="70" width="60" height="80" rx="5" fill="var(--bs-success)" opacity="0.7" />
+                                    <text x="205" y="110" text-anchor="middle" fill="white" font-size="12">Quest</text>
+                                    
+                                    <!-- Arrows -->
+                                    <path d="M105 90 L165 90" stroke="white" stroke-width="2" fill="none" />
+                                    <polygon points="160,85 170,90 160,95" fill="white" />
+                                    
+                                    <path d="M175 120 L115 120" stroke="white" stroke-width="2" fill="none" />
+                                    <polygon points="120,115 110,120 120,125" fill="white" />
+                                    
+                                    <!-- Labels -->
+                                    <text x="135" y="80" text-anchor="middle" fill="white" font-size="10">Actions</text>
+                                    <text x="135" y="135" text-anchor="middle" fill="white" font-size="10">Rewards</text>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

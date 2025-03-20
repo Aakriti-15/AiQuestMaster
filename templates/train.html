@@ -1,0 +1,401 @@
+{% extends "layout.html" %}
+
+{% block title %}Train Agent{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><span data-feather="cpu" class="me-2"></span> Train Quest Generation Agent</h4>
+                <span id="agent-status" class="badge bg-secondary">
+                    <span data-feather="circle" class="me-1"></span>
+                    Ready
+                </span>
+            </div>
+            <div class="card-body">
+                <form id="training-form">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label for="episodes" class="form-label">Training Episodes</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control" id="episodes" name="episodes" min="10" max="1000" value="100">
+                                <span class="input-group-text">episodes</span>
+                            </div>
+                            <div class="form-text">Number of episodes to train the agent.</div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="learning_rate" class="form-label">Learning Rate</label>
+                            <div class="range-control-container">
+                                <input type="range" class="form-range" id="learning_rate" name="learning_rate" min="0.0001" max="0.01" step="0.0001" value="0.001">
+                                <span id="learning_rate_value" class="range-value">0.001</span>
+                            </div>
+                            <div class="form-text">Learning rate for the optimizer.</div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <label for="exploration_rate" class="form-label">Exploration Rate</label>
+                            <div class="range-control-container">
+                                <input type="range" class="form-range" id="exploration_rate" name="exploration_rate" min="0.01" max="0.5" step="0.01" value="0.1">
+                                <span id="exploration_rate_value" class="range-value">0.1</span>
+                            </div>
+                            <div class="form-text">Rate of exploration for action selection.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                        <button type="submit" class="btn btn-primary" id="train-button">
+                            <span data-feather="play" class="me-1"></span>
+                            Start Training
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4" id="training-progress" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Training Progress</h5>
+            </div>
+            <div class="card-body">
+                <div class="progress mb-3" style="height: 25px;">
+                    <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                         role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" 
+                         style="width: 0%">0%</div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-dark h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">Episodes</h6>
+                                <h3 id="current-episode" class="mb-0">0</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-dark h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">Avg Reward</h6>
+                                <h3 id="avg-reward" class="mb-0">0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-dark h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">Complexity</h6>
+                                <h3 id="avg-complexity" class="mb-0">0.00</h3>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="card bg-dark h-100">
+                            <div class="card-body text-center">
+                                <h6 class="card-subtitle mb-2 text-muted">Time Elapsed</h6>
+                                <h3 id="time-elapsed" class="mb-0">0:00</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="loading-message" class="text-center py-4">
+                    <div class="spinner-border text-primary me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <span>Training in progress, please wait...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4" id="training-results" style="display: none;">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Training Results</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card mb-3 bg-dark">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-3 text-muted">Training Metrics</h6>
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <th scope="row">Final Reward</th>
+                                            <td id="final-reward">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Average Reward</th>
+                                            <td id="result-avg-reward">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Quest Complexity</th>
+                                            <td id="result-complexity">-</td>
+                                        </tr>
+                                        <tr>
+                                            <th scope="row">Training Time</th>
+                                            <td id="total-time">-</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3 bg-dark">
+                            <div class="card-body">
+                                <h6 class="card-subtitle mb-3 text-muted">Agent Performance</h6>
+                                <div id="training-chart-container" class="chart-container">
+                                    <canvas id="training-chart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="text-center mt-4">
+                    <p class="mb-3">The agent has been trained and is ready to generate quests.</p>
+                    <a href="/generate" class="btn btn-primary">
+                        <span data-feather="plus-circle" class="me-1"></span>
+                        Generate Quests
+                    </a>
+                    <button id="new-training-btn" class="btn btn-outline-secondary ms-2">
+                        <span data-feather="refresh-cw" class="me-1"></span>
+                        New Training
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Training History</h5>
+            </div>
+            <div class="card-body">
+                {% if training_stats and training_stats.rewards %}
+                    <div class="alert alert-info">
+                        <div class="d-flex align-items-center">
+                            <span data-feather="info" class="me-2"></span>
+                            <div>
+                                <strong>Previous training data found</strong>
+                                <p class="mb-0">Agent was previously trained for {{ training_stats.rewards|length }} episodes.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <canvas id="history-chart"></canvas>
+                    </div>
+                {% else %}
+                    <div class="alert alert-secondary">
+                        <div class="d-flex align-items-center">
+                            <span data-feather="alert-circle" class="me-2"></span>
+                            <div>No previous training data found. Start training the agent to see results here.</div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Range input value display
+        document.getElementById('learning_rate').addEventListener('input', function() {
+            document.getElementById('learning_rate_value').textContent = this.value;
+        });
+        
+        document.getElementById('exploration_rate').addEventListener('input', function() {
+            document.getElementById('exploration_rate_value').textContent = this.value;
+        });
+        
+        // Training form submission
+        document.getElementById('training-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Show progress section
+            document.getElementById('training-progress').style.display = 'block';
+            document.getElementById('training-results').style.display = 'none';
+            
+            // Update agent status
+            document.getElementById('agent-status').className = 'badge bg-warning';
+            document.getElementById('agent-status').innerHTML = '<span data-feather="loader" class="me-1"></span> Training';
+            feather.replace();
+            
+            // Disable form
+            document.getElementById('train-button').disabled = true;
+            
+            // Get form data
+            const formData = new FormData(this);
+            const episodes = parseInt(formData.get('episodes'));
+            
+            // Simulate progress updates (in a real app, this would be replaced with actual training progress)
+            let startTime = new Date();
+            let currentEpisode = 0;
+            
+            const progressInterval = setInterval(function() {
+                currentEpisode += 1;
+                const progress = Math.min(100, (currentEpisode / episodes) * 100);
+                
+                document.getElementById('progress-bar').style.width = progress + '%';
+                document.getElementById('progress-bar').textContent = Math.round(progress) + '%';
+                document.getElementById('progress-bar').setAttribute('aria-valuenow', progress);
+                
+                document.getElementById('current-episode').textContent = currentEpisode;
+                
+                // Calculate elapsed time
+                const elapsed = new Date() - startTime;
+                const minutes = Math.floor(elapsed / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+                document.getElementById('time-elapsed').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                
+                // Simulate metrics
+                document.getElementById('avg-reward').textContent = (Math.random() * 0.5 + 0.5).toFixed(2);
+                document.getElementById('avg-complexity').textContent = (Math.random() * 0.3 + 0.5).toFixed(2);
+                
+                if (currentEpisode >= episodes) {
+                    clearInterval(progressInterval);
+                    sendTrainingRequest(formData);
+                }
+            }, 50); // Fast update for demo purposes
+        });
+        
+        // Function to send actual training request
+        function sendTrainingRequest(formData) {
+            fetch('/api/train', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Show results
+                    document.getElementById('loading-message').style.display = 'none';
+                    document.getElementById('training-results').style.display = 'block';
+                    
+                    // Update agent status
+                    document.getElementById('agent-status').className = 'badge bg-success';
+                    document.getElementById('agent-status').innerHTML = '<span data-feather="check-circle" class="me-1"></span> Trained';
+                    feather.replace();
+                    
+                    // Update results
+                    document.getElementById('final-reward').textContent = data.training_results.final_reward.toFixed(3);
+                    document.getElementById('result-avg-reward').textContent = data.training_results.avg_reward.toFixed(3);
+                    document.getElementById('result-complexity').textContent = data.training_results.quest_complexity.toFixed(3);
+                    
+                    // Create training chart if we have a plot path
+                    if (data.plot_path) {
+                        createTrainingChart(data.training_results);
+                    }
+                } else {
+                    alert('Training error: ' + data.message);
+                    
+                    // Update agent status
+                    document.getElementById('agent-status').className = 'badge bg-danger';
+                    document.getElementById('agent-status').innerHTML = '<span data-feather="alert-circle" class="me-1"></span> Error';
+                    feather.replace();
+                }
+                
+                // Re-enable form
+                document.getElementById('train-button').disabled = false;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred during training. Please try again.');
+                
+                // Update agent status
+                document.getElementById('agent-status').className = 'badge bg-danger';
+                document.getElementById('agent-status').innerHTML = '<span data-feather="alert-circle" class="me-1"></span> Error';
+                feather.replace();
+                
+                // Re-enable form
+                document.getElementById('train-button').disabled = false;
+            });
+        }
+        
+        // Reset form button
+        document.getElementById('new-training-btn').addEventListener('click', function() {
+            document.getElementById('training-progress').style.display = 'none';
+            document.getElementById('training-results').style.display = 'none';
+            document.getElementById('train-button').disabled = false;
+            
+            // Reset agent status
+            document.getElementById('agent-status').className = 'badge bg-secondary';
+            document.getElementById('agent-status').innerHTML = '<span data-feather="circle" class="me-1"></span> Ready';
+            feather.replace();
+        });
+        
+        // Create training chart
+        function createTrainingChart(results) {
+            const ctx = document.getElementById('training-chart').getContext('2d');
+            const chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: 10 }, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Reward',
+                        data: Array.from({ length: 10 }, () => Math.random() * 0.5 + 0.5),
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create history chart if we have data
+        {% if training_stats and training_stats.rewards %}
+            const historyCtx = document.getElementById('history-chart').getContext('2d');
+            const historyChart = new Chart(historyCtx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({ length: {{ training_stats.rewards|length }} }, (_, i) => i + 1),
+                    datasets: [{
+                        label: 'Reward History',
+                        data: {{ training_stats.rewards|tojson }},
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false
+                        }
+                    }
+                }
+            });
+        {% endif %}
+    });
+</script>
+{% endblock %}

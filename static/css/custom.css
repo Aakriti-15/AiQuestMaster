@@ -1,0 +1,171 @@
+/* Custom styles for the RL Quest Generator */
+
+/* Quest display styling */
+.quest-card {
+    transition: transform 0.2s;
+    margin-bottom: 1.5rem;
+}
+
+.quest-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+}
+
+.objective-item {
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid var(--bs-primary);
+}
+
+.optional-objective {
+    border-left-style: dashed;
+    opacity: 0.8;
+}
+
+.reward-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.25rem;
+}
+
+/* Training metrics styling */
+.metrics-card {
+    height: 100%;
+}
+
+.progress-container {
+    position: relative;
+    margin: 1.5rem 0;
+}
+
+.progress-label {
+    position: absolute;
+    right: 0.5rem;
+    top: -1.25rem;
+    font-size: 0.75rem;
+}
+
+/* Charts and visualization */
+.chart-container {
+    height: 300px;
+    margin-bottom: 1.5rem;
+}
+
+/* Agent controls */
+.control-panel {
+    background-color: rgba(33, 37, 41, 0.03);
+    border-radius: 0.25rem;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.range-control-container {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.range-value {
+    position: absolute;
+    right: 0;
+    top: 0;
+    font-weight: bold;
+}
+
+/* Status indicators */
+.status-indicator {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+}
+
+.status-green {
+    background-color: var(--bs-success);
+}
+
+.status-yellow {
+    background-color: var(--bs-warning);
+}
+
+.status-red {
+    background-color: var(--bs-danger);
+}
+
+/* Animated elements */
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+/* Loading spinner */
+.spinner-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+/* Quest theme indicators */
+.theme-badge {
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-radius: 0 0.25rem 0 0.5rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.theme-fantasy {
+    background-color: rgba(111, 66, 193, 0.9);
+    color: white;
+}
+
+.theme-sci-fi {
+    background-color: rgba(13, 202, 240, 0.9);
+    color: white;
+}
+
+.theme-western {
+    background-color: rgba(220, 53, 69, 0.9);
+    color: white;
+}
+
+/* Quest metrics display */
+.metrics-display {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.metric-item {
+    text-align: center;
+    flex: 1;
+}
+
+.metric-value {
+    font-size: 1.25rem;
+    font-weight: bold;
+}
+
+.metric-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(0, 0, 0, 0.5);
+}

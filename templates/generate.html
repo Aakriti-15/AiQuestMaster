@@ -1,0 +1,365 @@
+{% extends "layout.html" %}
+
+{% block title %}Generate Quest{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><span data-feather="plus-circle" class="me-2"></span> Generate New Quest</h4>
+            </div>
+            <div class="card-body">
+                <form id="generation-form">
+                    <div class="mb-3">
+                        <label for="theme" class="form-label">Quest Theme</label>
+                        <select class="form-select" id="theme" name="theme">
+                            <option value="fantasy">Fantasy</option>
+                            <option value="sci-fi">Sci-Fi</option>
+                            <option value="western">Western</option>
+                        </select>
+                        <div class="form-text">The thematic setting for the quest.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="complexity" class="form-label">Quest Complexity</label>
+                        <div class="range-control-container">
+                            <input type="range" class="form-range" id="complexity" name="complexity" min="0.1" max="1.0" step="0.1" value="0.5">
+                            <span id="complexity_value" class="range-value">0.5</span>
+                        </div>
+                        <div class="form-text">Higher values create more complex quests with multiple objectives.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="seed" class="form-label">Random Seed (Optional)</label>
+                        <input type="number" class="form-control" id="seed" name="seed" placeholder="Leave empty for random">
+                        <div class="form-text">Set a seed for deterministic generation.</div>
+                    </div>
+                    
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary" id="generate-button">
+                            <span data-feather="zap" class="me-1"></span>
+                            Generate Quest
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">Generation Options</h5>
+            </div>
+            <div class="card-body">
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="deterministic-switch" checked>
+                    <label class="form-check-label" for="deterministic-switch">Deterministic Generation</label>
+                    <div class="form-text">When enabled, the agent will choose the most likely actions.</div>
+                </div>
+                
+                <div class="form-check form-switch mb-3">
+                    <input class="form-check-input" type="checkbox" id="save-switch" checked>
+                    <label class="form-check-label" for="save-switch">Save Generated Quests</label>
+                    <div class="form-text">Automatically save quests to the database.</div>
+                </div>
+                
+                <hr>
+                
+                <div class="mb-3">
+                    <label class="form-label d-block">Quest Type Preference</label>
+                    <div class="btn-group" role="group" aria-label="Quest type preference">
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-any" value="any" checked>
+                        <label class="btn btn-outline-secondary" for="quest-type-any">Any</label>
+                        
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-fetch" value="fetch">
+                        <label class="btn btn-outline-secondary" for="quest-type-fetch">Fetch</label>
+                        
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-kill" value="kill">
+                        <label class="btn btn-outline-secondary" for="quest-type-kill">Kill</label>
+                        
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-escort" value="escort">
+                        <label class="btn btn-outline-secondary" for="quest-type-escort">Escort</label>
+                        
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-discover" value="discover">
+                        <label class="btn btn-outline-secondary" for="quest-type-discover">Discover</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-8">
+        <div id="loading-container" style="display: none;">
+            <div class="card">
+                <div class="card-body">
+                    <div class="spinner-container">
+                        <div class="spinner-border text-primary me-3" role="status"></div>
+                        <span>Generating quest, please wait...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="quest-container" style="display: none;">
+            <div class="card quest-card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0" id="quest-title"></h4>
+                    <span class="theme-badge" id="quest-theme-badge"></span>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h6 class="text-muted mb-3">Quest Description</h6>
+                        <p id="quest-description" class="lead"></p>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Objectives</h6>
+                            <div id="quest-objectives"></div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="text-muted mb-3">Rewards</h6>
+                            <div id="quest-rewards"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-display">
+                        <div class="metric-item">
+                            <div class="metric-value" id="metric-complexity">-</div>
+                            <div class="metric-label">Complexity</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="metric-coherence">-</div>
+                            <div class="metric-label">Coherence</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="metric-novelty">-</div>
+                            <div class="metric-label">Novelty</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="metric-feasibility">-</div>
+                            <div class="metric-label">Feasibility</div>
+                        </div>
+                        <div class="metric-item">
+                            <div class="metric-value" id="metric-reward">-</div>
+                            <div class="metric-label">Total Reward</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex justify-content-between">
+                    <div>
+                        <span class="text-muted" id="quest-id"></span>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-outline-secondary" id="copy-quest-btn">
+                            <span data-feather="clipboard" class="me-1"></span>
+                            Copy JSON
+                        </button>
+                        <button class="btn btn-sm btn-primary" id="generate-another-btn">
+                            <span data-feather="refresh-cw" class="me-1"></span>
+                            Generate Another
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Quest JSON Data</h5>
+                </div>
+                <div class="card-body">
+                    <pre id="quest-json" class="bg-dark p-3 rounded" style="max-height: 300px; overflow-y: auto;"></pre>
+                </div>
+            </div>
+        </div>
+        
+        <div id="error-container" style="display: none;">
+            <div class="alert alert-danger">
+                <h5 class="alert-heading">
+                    <span data-feather="alert-triangle" class="me-2"></span>
+                    Error Generating Quest
+                </h5>
+                <p id="error-message">An unexpected error occurred.</p>
+                <hr>
+                <button class="btn btn-sm btn-outline-danger" id="retry-button">
+                    <span data-feather="refresh-cw" class="me-1"></span>
+                    Retry
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Range input value display
+        document.getElementById('complexity').addEventListener('input', function() {
+            document.getElementById('complexity_value').textContent = this.value;
+        });
+        
+        // Form submission
+        document.getElementById('generation-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            generateQuest();
+        });
+        
+        // Generate another quest button
+        document.getElementById('generate-another-btn').addEventListener('click', function() {
+            generateQuest();
+        });
+        
+        // Copy JSON button
+        document.getElementById('copy-quest-btn').addEventListener('click', function() {
+            const jsonText = document.getElementById('quest-json').textContent;
+            navigator.clipboard.writeText(jsonText).then(function() {
+                // Change button text temporarily
+                const originalText = this.innerHTML;
+                this.innerHTML = '<span data-feather="check"></span> Copied!';
+                feather.replace();
+                
+                setTimeout(() => {
+                    this.innerHTML = originalText;
+                    feather.replace();
+                }, 2000);
+            }.bind(this));
+        });
+        
+        // Retry button
+        document.getElementById('retry-button').addEventListener('click', function() {
+            generateQuest();
+        });
+        
+        // Function to generate a quest
+        function generateQuest() {
+            // Get form data
+            const formData = new FormData(document.getElementById('generation-form'));
+            
+            // Add deterministic option
+            formData.append('deterministic', document.getElementById('deterministic-switch').checked);
+            
+            // Add save option
+            formData.append('save', document.getElementById('save-switch').checked);
+            
+            // Add quest type preference
+            const questTypeRadio = document.querySelector('input[name="quest-type"]:checked');
+            if (questTypeRadio && questTypeRadio.value !== 'any') {
+                formData.append('quest_type', questTypeRadio.value);
+            }
+            
+            // Show loading, hide others
+            document.getElementById('loading-container').style.display = 'block';
+            document.getElementById('quest-container').style.display = 'none';
+            document.getElementById('error-container').style.display = 'none';
+            
+            // Send request
+            fetch('/api/generate_quest', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide loading
+                document.getElementById('loading-container').style.display = 'none';
+                
+                if (data.success) {
+                    // Show quest
+                    displayQuest(data.quest);
+                    document.getElementById('quest-container').style.display = 'block';
+                } else {
+                    // Show error
+                    document.getElementById('error-message').textContent = data.message;
+                    document.getElementById('error-container').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Hide loading, show error
+                document.getElementById('loading-container').style.display = 'none';
+                document.getElementById('error-message').textContent = 'Network error. Please try again.';
+                document.getElementById('error-container').style.display = 'block';
+            });
+        }
+        
+        // Function to display a quest
+        function displayQuest(quest) {
+            // Set quest title
+            document.getElementById('quest-title').textContent = quest.title;
+            
+            // Set theme badge
+            const themeBadge = document.getElementById('quest-theme-badge');
+            themeBadge.textContent = quest.theme.charAt(0).toUpperCase() + quest.theme.slice(1);
+            themeBadge.className = 'theme-badge theme-' + quest.theme;
+            
+            // Set description
+            document.getElementById('quest-description').textContent = quest.description;
+            
+            // Set quest ID
+            document.getElementById('quest-id').textContent = 'Quest ID: ' + quest.id;
+            
+            // Clear and fill objectives
+            const objectivesContainer = document.getElementById('quest-objectives');
+            objectivesContainer.innerHTML = '';
+            
+            quest.objectives.forEach(objective => {
+                const objectiveDiv = document.createElement('div');
+                objectiveDiv.className = objective.optional ? 
+                    'objective-item optional-objective' : 'objective-item';
+                
+                const objectiveContent = document.createElement('div');
+                objectiveContent.innerHTML = `
+                    <div class="d-flex justify-content-between">
+                        <strong>${objective.id}. ${objective.description}</strong>
+                        ${objective.optional ? '<span class="badge bg-secondary">Optional</span>' : ''}
+                    </div>
+                    ${objective.amount_required ? 
+                        `<div class="progress mt-2" style="height: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted">0/${objective.amount_required}</small>` : ''}
+                `;
+                
+                objectiveDiv.appendChild(objectiveContent);
+                objectivesContainer.appendChild(objectiveDiv);
+            });
+            
+            // Clear and fill rewards
+            const rewardsContainer = document.getElementById('quest-rewards');
+            rewardsContainer.innerHTML = '';
+            
+            quest.rewards.forEach(reward => {
+                const rewardDiv = document.createElement('div');
+                rewardDiv.className = 'reward-item';
+                
+                let icon = 'award';
+                if (reward.type === 'currency') icon = 'dollar-sign';
+                if (reward.type === 'experience') icon = 'star';
+                if (reward.type === 'item') icon = 'package';
+                
+                rewardDiv.innerHTML = `
+                    <span data-feather="${icon}" class="me-2"></span>
+                    <div>${reward.description}</div>
+                `;
+                
+                rewardsContainer.appendChild(rewardDiv);
+            });
+            
+            // Initialize feather icons for new content
+            feather.replace();
+            
+            // Set metrics
+            const metrics = quest.metrics || {};
+            document.getElementById('metric-complexity').textContent = (metrics.complexity || 0).toFixed(2);
+            document.getElementById('metric-coherence').textContent = (metrics.coherence || 0).toFixed(2);
+            document.getElementById('metric-novelty').textContent = (metrics.novelty || 0).toFixed(2);
+            document.getElementById('metric-feasibility').textContent = (metrics.feasibility || 0).toFixed(2);
+            document.getElementById('metric-reward').textContent = (metrics.total_reward || 0).toFixed(2);
+            
+            // Set JSON display
+            document.getElementById('quest-json').textContent = JSON.stringify(quest, null, 2);
+        }
+    });
+</script>
+{% endblock %}
