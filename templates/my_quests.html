@@ -1,0 +1,303 @@
+{% extends "layout.html" %}
+
+{% block title %}My Quests{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h4 class="mb-0"><span data-feather="book" class="me-2"></span> My Generated Quests</h4>
+                <div>
+                    <button id="export-button" class="btn btn-outline-secondary">
+                        <span data-feather="download" class="me-1"></span> Export All Quests
+                    </button>
+                    <a href="/generate" class="btn btn-primary ms-2">
+                        <span data-feather="plus-circle" class="me-1"></span> Generate New Quest
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if quests %}
+                    <p>You have {{ quests|length }} saved quests. Click on any quest to view its details.</p>
+                    
+                    <div class="row mt-4" id="quest-grid">
+                        {% for quest in quests %}
+                        <div class="col-md-6 col-lg-4 quest-item" 
+                             data-theme="{{ quest.theme }}" 
+                             data-type="{{ quest.type }}"
+                             data-complexity="{{ quest.metrics.complexity if quest.metrics and quest.metrics.complexity else 0 }}"
+                             data-reward="{{ quest.metrics.total_reward if quest.metrics and quest.metrics.total_reward else 0 }}">
+                            <div class="card quest-card mb-4">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h5 class="card-title mb-0 text-truncate" style="max-width: 80%;">{{ quest.title }}</h5>
+                                    <div class="d-flex">
+                                        <span class="theme-badge theme-{{ quest.theme }}">{{ quest.theme }}</span>
+                                        <button class="btn btn-sm btn-link text-danger delete-quest" data-quest-id="{{ quest.id }}">
+                                            <span data-feather="trash-2" style="width: 16px; height: 16px;"></span>
+                                        </button>
+                                    </div>
+                                </div>
+                                <a href="/quest/{{ quest.id }}" class="text-decoration-none text-inherit">
+                                    <div class="card-body">
+                                        <p class="card-text small text-truncate mb-2">{{ quest.description }}</p>
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span class="badge bg-primary">{{ quest.type }}</span>
+                                            <small class="text-muted">{{ quest.objectives|length }} objectives</small>
+                                        </div>
+                                        
+                                        <div class="progress-container">
+                                            <div class="progress-label d-flex justify-content-between">
+                                                <span>Complexity</span>
+                                                <span>{{ (quest.metrics.complexity * 100)|int if quest.metrics and quest.metrics.complexity else 0 }}%</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar bg-info" role="progressbar" 
+                                                     style="width: {{ (quest.metrics.complexity * 100)|int if quest.metrics and quest.metrics.complexity else 0 }}%" 
+                                                     aria-valuenow="{{ (quest.metrics.complexity * 100)|int if quest.metrics and quest.metrics.complexity else 0 }}" 
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="progress-container mt-2">
+                                            <div class="progress-label d-flex justify-content-between">
+                                                <span>Coherence</span>
+                                                <span>{{ (quest.metrics.coherence * 100)|int if quest.metrics and quest.metrics.coherence else 0 }}%</span>
+                                            </div>
+                                            <div class="progress" style="height: 6px;">
+                                                <div class="progress-bar bg-success" role="progressbar" 
+                                                     style="width: {{ (quest.metrics.coherence * 100)|int if quest.metrics and quest.metrics.coherence else 0 }}%" 
+                                                     aria-valuenow="{{ (quest.metrics.coherence * 100)|int if quest.metrics and quest.metrics.coherence else 0 }}" 
+                                                     aria-valuemin="0" aria-valuemax="100"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-info">
+                        <span data-feather="info" class="me-2"></span>
+                        You haven't generated any quests yet. Click the "Generate New Quest" button to create your first quest!
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Success Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Quests Exported</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Your quests have been exported successfully!</p>
+                <p>Click the button below to download the JSON file:</p>
+                <div class="d-grid">
+                    <a id="download-link" href="#" class="btn btn-primary">
+                        <span data-feather="download" class="me-1"></span> Download Quests
+                    </a>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="deleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this quest? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirm-delete-btn">Delete Quest</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .quest-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .quest-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    
+    .theme-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+        margin-right: 0.5rem;
+    }
+    
+    .theme-fantasy {
+        background-color: #7952b3;
+        color: white;
+    }
+    
+    .theme-sci-fi {
+        background-color: #0dcaf0;
+        color: white;
+    }
+    
+    .theme-western {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .progress-container {
+        margin-top: 0.5rem;
+    }
+    
+    .progress-label {
+        font-size: 0.75rem;
+        margin-bottom: 0.25rem;
+        color: var(--bs-secondary-color);
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Export button handler
+        document.getElementById('export-button').addEventListener('click', function() {
+            // Show loading state
+            this.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Exporting...';
+            this.disabled = true;
+            
+            // Call export API
+            fetch('/api/export_quests', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Reset button
+                document.getElementById('export-button').innerHTML = '<span data-feather="download" class="me-1"></span> Export All Quests';
+                document.getElementById('export-button').disabled = false;
+                feather.replace();
+                
+                if (data.success) {
+                    // Update download link
+                    document.getElementById('download-link').href = data.download_url;
+                    
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('exportModal'));
+                    modal.show();
+                } else {
+                    alert('Export failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                // Reset button
+                document.getElementById('export-button').innerHTML = '<span data-feather="download" class="me-1"></span> Export All Quests';
+                document.getElementById('export-button').disabled = false;
+                feather.replace();
+                
+                console.error('Error:', error);
+                alert('Export failed. Please try again.');
+            });
+        });
+        
+        // Delete quest handlers
+        let questToDelete = null;
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        
+        // Set up delete buttons
+        document.querySelectorAll('.delete-quest').forEach(button => {
+            button.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                // Store the quest ID to delete
+                questToDelete = this.getAttribute('data-quest-id');
+                
+                // Show confirmation modal
+                deleteModal.show();
+            });
+        });
+        
+        // Confirm delete button
+        document.getElementById('confirm-delete-btn').addEventListener('click', function() {
+            if (!questToDelete) return;
+            
+            // Show loading state
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Deleting...';
+            this.disabled = true;
+            
+            // Call delete API
+            fetch(`/api/delete_quest/${questToDelete}`, {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Hide modal
+                deleteModal.hide();
+                
+                // Reset button
+                document.getElementById('confirm-delete-btn').innerHTML = 'Delete Quest';
+                document.getElementById('confirm-delete-btn').disabled = false;
+                
+                if (data.success) {
+                    // Remove quest card from DOM
+                    const questCards = document.querySelectorAll('.quest-item');
+                    for (const card of questCards) {
+                        if (card.querySelector('.delete-quest').getAttribute('data-quest-id') === questToDelete) {
+                            card.remove();
+                            break;
+                        }
+                    }
+                    
+                    // If no quests left, show empty state
+                    if (document.querySelectorAll('.quest-item').length === 0) {
+                        document.getElementById('quest-grid').innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-info">
+                                    <span data-feather="info" class="me-2"></span>
+                                    You haven't generated any quests yet. Click the "Generate New Quest" button to create your first quest!
+                                </div>
+                            </div>
+                        `;
+                        feather.replace();
+                    }
+                } else {
+                    alert('Delete failed: ' + data.message);
+                }
+            })
+            .catch(error => {
+                // Hide modal
+                deleteModal.hide();
+                
+                // Reset button
+                document.getElementById('confirm-delete-btn').innerHTML = 'Delete Quest';
+                document.getElementById('confirm-delete-btn').disabled = false;
+                
+                console.error('Error:', error);
+                alert('Delete failed. Please try again.');
+            });
+        });
+    });
+</script>
+{% endblock %}

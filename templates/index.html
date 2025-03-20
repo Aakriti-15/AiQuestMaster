@@ -3,22 +3,22 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<div class="px-4 py-5 my-5 text-center">
+<div class="px-4 py-5 my-3 text-center">
     <div class="mb-4">
-        <span data-feather="compass" style="width: 64px; height: 64px;"></span>
+        <span data-feather="compass" style="width: 80px; height: 80px;"></span>
     </div>
-    <h1 class="display-5 fw-bold text-body-emphasis">Quest Generation RL</h1>
+    <h1 class="display-4 fw-bold text-body-emphasis">AI Quest Generator</h1>
     <div class="col-lg-8 mx-auto">
         <p class="lead mb-4">
-            A reinforcement learning system for procedural quest generation in games.
-            This system uses RL techniques to learn how to generate engaging, coherent, and novel quests.
+            Create unique, engaging quests for your game with the power of AI.
+            Our intelligent quest generator creates personalized quests based on your preferences.
         </p>
-        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
-            <a href="/train" class="btn btn-primary btn-lg px-4 gap-3">
-                <span data-feather="cpu" class="me-1"></span> Train Agent
+        <div class="d-grid gap-2 d-sm-flex justify-content-sm-center mt-4">
+            <a href="/generate" class="btn btn-primary btn-lg px-5 py-3">
+                <span data-feather="zap" class="me-2"></span> Generate Your Quest
             </a>
-            <a href="/generate" class="btn btn-outline-secondary btn-lg px-4">
-                <span data-feather="plus-circle" class="me-1"></span> Generate Quest
+            <a href="/my-quests" class="btn btn-outline-secondary btn-lg px-4">
+                <span data-feather="book" class="me-2"></span> View Your Quests
             </a>
         </div>
     </div>
@@ -26,124 +26,153 @@
 
 <div class="row g-4 py-5">
     <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <span data-feather="cpu" class="me-2"></span>
-                    Reinforcement Learning
-                </h5>
+        <div class="card h-100 quest-type-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle mb-3">
+                    <span data-feather="search" style="width: 32px; height: 32px;"></span>
+                </div>
+                <h4 class="card-title">Adventure Quests</h4>
                 <p class="card-text">
-                    The system uses a reinforcement learning agent powered by Proximal Policy Optimization (PPO) to learn optimal quest generation strategies from experience.
+                    Embark on thrilling journeys to mysterious locations, discover hidden treasures, and uncover ancient secrets.
                 </p>
-                <ul>
-                    <li>Learning from feedback</li>
-                    <li>Adapting to player preferences</li>
-                    <li>Balancing complexity and feasibility</li>
-                </ul>
+                <a href="/generate?type=discover" class="btn btn-outline-primary mt-2">Create Adventure</a>
             </div>
         </div>
     </div>
     
     <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <span data-feather="box" class="me-2"></span>
-                    Quest Structure
-                </h5>
+        <div class="card h-100 quest-type-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle mb-3">
+                    <span data-feather="target" style="width: 32px; height: 32px;"></span>
+                </div>
+                <h4 class="card-title">Combat Quests</h4>
                 <p class="card-text">
-                    Quests are generated with coherent structures including:
+                    Take on dangerous enemies, defeat powerful bosses, and eliminate threats to restore peace to troubled lands.
                 </p>
-                <ul>
-                    <li>Diverse quest types (fetch, kill, escort, etc.)</li>
-                    <li>Multiple objectives with dependencies</li>
-                    <li>Appropriate rewards based on difficulty</li>
-                    <li>Narrative elements and theming</li>
-                </ul>
+                <a href="/generate?type=kill" class="btn btn-outline-primary mt-2">Create Combat</a>
             </div>
         </div>
     </div>
     
     <div class="col-md-4">
-        <div class="card h-100">
-            <div class="card-body">
-                <h5 class="card-title">
-                    <span data-feather="bar-chart-2" class="me-2"></span>
-                    Quality Metrics
-                </h5>
+        <div class="card h-100 quest-type-card">
+            <div class="card-body text-center p-4">
+                <div class="icon-circle mb-3">
+                    <span data-feather="shield" style="width: 32px; height: 32px;"></span>
+                </div>
+                <h4 class="card-title">Escort Missions</h4>
                 <p class="card-text">
-                    Generated quests are evaluated on several metrics:
+                    Protect important characters on dangerous journeys, ensure their safety, and guide them through hostile territory.
                 </p>
-                <ul>
-                    <li>Complexity: balance of objectives and challenge</li>
-                    <li>Coherence: logical consistency of quest elements</li>
-                    <li>Novelty: uniqueness compared to previous quests</li>
-                    <li>Feasibility: can be completed with available resources</li>
-                </ul>
+                <a href="/generate?type=escort" class="btn btn-outline-primary mt-2">Create Escort</a>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row my-4">
-    <div class="col-12">
+<div class="row my-5">
+    <div class="col-md-6">
         <div class="card">
             <div class="card-header">
-                <h5 class="mb-0">How It Works</h5>
+                <h4 class="mb-0"><span data-feather="star" class="me-2"></span> Quest Themes</h4>
             </div>
             <div class="card-body">
-                <div class="row align-items-center">
-                    <div class="col-md-6">
-                        <ol class="mb-0">
-                            <li class="mb-3">
-                                <strong>Environment Simulation</strong>: A virtual game world provides the context for quest generation, with locations, NPCs, items, and game state.
-                            </li>
-                            <li class="mb-3">
-                                <strong>RL Agent Training</strong>: The agent learns to make decisions about quest type, objectives, difficulty, and rewards based on feedback.
-                            </li>
-                            <li class="mb-3">
-                                <strong>Quest Assembly</strong>: Actions chosen by the agent are transformed into structured quests with narrative elements.
-                            </li>
-                            <li class="mb-3">
-                                <strong>Quality Evaluation</strong>: Generated quests are scored on metrics like complexity, coherence, and novelty.
-                            </li>
-                            <li>
-                                <strong>Continuous Learning</strong>: The system improves over time through additional training and feedback.
-                            </li>
-                        </ol>
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="theme-choice text-center p-3 rounded" onclick="window.location='/generate?theme=fantasy'">
+                            <span data-feather="compass" class="d-block mb-2" style="margin: 0 auto;"></span>
+                            <h6>Fantasy</h6>
+                            <small class="text-muted">Magic, Dragons, Kingdoms</small>
+                        </div>
                     </div>
-                    <div class="col-md-6">
-                        <div class="text-center">
-                            <div class="d-inline-block p-4 bg-dark rounded">
-                                <svg width="300" height="200" viewBox="0 0 300 200">
-                                    <!-- Game World -->
-                                    <rect x="10" y="10" width="280" height="180" rx="10" fill="none" stroke="var(--bs-info)" stroke-width="2" />
-                                    
-                                    <!-- Agent -->
-                                    <circle cx="75" cy="100" r="30" fill="var(--bs-primary)" opacity="0.7" />
-                                    <text x="75" y="105" text-anchor="middle" fill="white" font-size="12">RL Agent</text>
-                                    
-                                    <!-- Quest -->
-                                    <rect x="175" y="70" width="60" height="80" rx="5" fill="var(--bs-success)" opacity="0.7" />
-                                    <text x="205" y="110" text-anchor="middle" fill="white" font-size="12">Quest</text>
-                                    
-                                    <!-- Arrows -->
-                                    <path d="M105 90 L165 90" stroke="white" stroke-width="2" fill="none" />
-                                    <polygon points="160,85 170,90 160,95" fill="white" />
-                                    
-                                    <path d="M175 120 L115 120" stroke="white" stroke-width="2" fill="none" />
-                                    <polygon points="120,115 110,120 120,125" fill="white" />
-                                    
-                                    <!-- Labels -->
-                                    <text x="135" y="80" text-anchor="middle" fill="white" font-size="10">Actions</text>
-                                    <text x="135" y="135" text-anchor="middle" fill="white" font-size="10">Rewards</text>
-                                </svg>
-                            </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="theme-choice text-center p-3 rounded" onclick="window.location='/generate?theme=sci-fi'">
+                            <span data-feather="cpu" class="d-block mb-2" style="margin: 0 auto;"></span>
+                            <h6>Sci-Fi</h6>
+                            <small class="text-muted">Space, Technology, Future</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="theme-choice text-center p-3 rounded" onclick="window.location='/generate?theme=western'">
+                            <span data-feather="sunset" class="d-block mb-2" style="margin: 0 auto;"></span>
+                            <h6>Western</h6>
+                            <small class="text-muted">Frontier, Cowboys, Outlaws</small>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><span data-feather="sliders" class="me-2"></span> Customize Your Experience</h4>
+            </div>
+            <div class="card-body">
+                <p>Every quest is unique and customizable to your preferences:</p>
+                <ul class="feature-list">
+                    <li><span data-feather="check" class="text-success me-2"></span> Choose quest complexity and difficulty</li>
+                    <li><span data-feather="check" class="text-success me-2"></span> Select your favorite theme and setting</li>
+                    <li><span data-feather="check" class="text-success me-2"></span> Get detailed objectives and rewards</li>
+                    <li><span data-feather="check" class="text-success me-2"></span> Save quests for later use in your games</li>
+                    <li><span data-feather="check" class="text-success me-2"></span> Export quest data in JSON format</li>
+                </ul>
+                <div class="mt-3">
+                    <a href="/generate" class="btn btn-primary w-100">
+                        <span data-feather="settings" class="me-2"></span> Advanced Quest Generator
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<style>
+    .icon-circle {
+        width: 70px;
+        height: 70px;
+        border-radius: 50%;
+        background: rgba(var(--bs-primary-rgb), 0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+    
+    .quest-type-card:hover {
+        transform: translateY(-5px);
+        transition: transform 0.3s ease;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+    
+    .quest-type-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: none;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .theme-choice {
+        cursor: pointer;
+        background: rgba(var(--bs-dark-rgb), 0.4);
+        transition: all 0.2s ease;
+    }
+    
+    .theme-choice:hover {
+        background: rgba(var(--bs-primary-rgb), 0.2);
+        transform: scale(1.05);
+    }
+    
+    .feature-list {
+        padding-left: 0;
+        list-style: none;
+    }
+    
+    .feature-list li {
+        margin-bottom: 10px;
+    }
+</style>
 {% endblock %}

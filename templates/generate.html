@@ -14,9 +14,9 @@
                     <div class="mb-3">
                         <label for="theme" class="form-label">Quest Theme</label>
                         <select class="form-select" id="theme" name="theme">
-                            <option value="fantasy">Fantasy</option>
-                            <option value="sci-fi">Sci-Fi</option>
-                            <option value="western">Western</option>
+                            <option value="fantasy" {% if theme == 'fantasy' %}selected{% endif %}>Fantasy</option>
+                            <option value="sci-fi" {% if theme == 'sci-fi' %}selected{% endif %}>Sci-Fi</option>
+                            <option value="western" {% if theme == 'western' %}selected{% endif %}>Western</option>
                         </select>
                         <div class="form-text">The thematic setting for the quest.</div>
                     </div>
@@ -24,8 +24,8 @@
                     <div class="mb-3">
                         <label for="complexity" class="form-label">Quest Complexity</label>
                         <div class="range-control-container">
-                            <input type="range" class="form-range" id="complexity" name="complexity" min="0.1" max="1.0" step="0.1" value="0.5">
-                            <span id="complexity_value" class="range-value">0.5</span>
+                            <input type="range" class="form-range" id="complexity" name="complexity" min="0.1" max="1.0" step="0.1" value="{{ complexity }}">
+                            <span id="complexity_value" class="range-value">{{ complexity }}</span>
                         </div>
                         <div class="form-text">Higher values create more complex quests with multiple objectives.</div>
                     </div>
@@ -68,20 +68,23 @@
                 <div class="mb-3">
                     <label class="form-label d-block">Quest Type Preference</label>
                     <div class="btn-group" role="group" aria-label="Quest type preference">
-                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-any" value="any" checked>
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-any" value="any" {% if not quest_type %}checked{% endif %}>
                         <label class="btn btn-outline-secondary" for="quest-type-any">Any</label>
                         
-                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-fetch" value="fetch">
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-fetch" value="fetch" {% if quest_type == 'fetch' %}checked{% endif %}>
                         <label class="btn btn-outline-secondary" for="quest-type-fetch">Fetch</label>
                         
-                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-kill" value="kill">
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-kill" value="kill" {% if quest_type == 'kill' %}checked{% endif %}>
                         <label class="btn btn-outline-secondary" for="quest-type-kill">Kill</label>
                         
-                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-escort" value="escort">
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-escort" value="escort" {% if quest_type == 'escort' %}checked{% endif %}>
                         <label class="btn btn-outline-secondary" for="quest-type-escort">Escort</label>
                         
-                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-discover" value="discover">
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-discover" value="discover" {% if quest_type == 'discover' %}checked{% endif %}>
                         <label class="btn btn-outline-secondary" for="quest-type-discover">Discover</label>
+                        
+                        <input type="radio" class="btn-check" name="quest-type" id="quest-type-crafting" value="crafting" {% if quest_type == 'crafting' %}checked{% endif %}>
+                        <label class="btn btn-outline-secondary" for="quest-type-crafting">Crafting</label>
                     </div>
                 </div>
             </div>
@@ -193,8 +196,104 @@
 {% endblock %}
 
 {% block scripts %}
+<style>
+    .theme-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        font-weight: bold;
+    }
+    
+    .theme-fantasy {
+        background-color: #7952b3;
+        color: white;
+    }
+    
+    .theme-sci-fi {
+        background-color: #0dcaf0;
+        color: white;
+    }
+    
+    .theme-western {
+        background-color: #dc3545;
+        color: white;
+    }
+    
+    .metrics-display {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        justify-content: space-between;
+        margin-top: 1.5rem;
+        background: rgba(255, 255, 255, 0.05);
+        padding: 1rem;
+        border-radius: 8px;
+    }
+    
+    .metric-item {
+        text-align: center;
+        flex: 1;
+        min-width: 80px;
+    }
+    
+    .metric-value {
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: var(--bs-info);
+    }
+    
+    .metric-label {
+        font-size: 0.8rem;
+        color: var(--bs-secondary-color);
+    }
+    
+    .objective-item, .reward-item {
+        padding: 0.75rem;
+        margin-bottom: 0.75rem;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    .optional-objective {
+        border-left: 3px solid var(--bs-secondary);
+    }
+    
+    .range-control-container {
+        position: relative;
+    }
+    
+    .range-value {
+        position: absolute;
+        right: 0;
+        top: 0;
+        font-size: 0.9rem;
+        font-weight: bold;
+    }
+    
+    #quest-container, #loading-container {
+        transition: opacity 0.3s ease;
+    }
+    
+    .quest-card {
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .spinner-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem 0;
+    }
+</style>
+
 <script>
     document.addEventListener('DOMContentLoaded', function() {
+        // Initialize feather icons
+        feather.replace();
+        
+        // Update complexity value display
+        document.getElementById('complexity_value').textContent = document.getElementById('complexity').value;
+        
         // Range input value display
         document.getElementById('complexity').addEventListener('input', function() {
             document.getElementById('complexity_value').textContent = this.value;

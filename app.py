@@ -5,8 +5,8 @@ import numpy as np
 from rl_quest_gen.environment import GameEnvironment
 from rl_quest_gen.agent import QuestGenerationAgent
 from rl_quest_gen.quest_model import QuestModel
-from rl_quest_gen.visualization import plot_training_progress
-from utils.data_handler import save_quest, load_quests, load_training_stats
+from rl_quest_gen.visualization import plot_training_progress, plot_quest_metrics, plot_single_quest_radar
+from utils.data_handler import save_quest, load_quests, load_training_stats, delete_quest, export_quests_to_json
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -22,52 +22,29 @@ agent = QuestGenerationAgent(env, quest_model)
 
 @app.route('/')
 def index():
-    """Home page with overview of the quest generation system."""
+    """Home page for the quest generation system."""
+    redirect_to_gen = request.args.get('auto_generate', False)
+    if redirect_to_gen:
+        return redirect(url_for('generate_page'))
     return render_template('index.html')
-
-@app.route('/train')
-def train_page():
-    """Page for training the RL agent."""
-    training_stats = load_training_stats()
-    return render_template('train.html', training_stats=training_stats)
-
-@app.route('/api/train', methods=['POST'])
-def train_agent():
-    """API endpoint to start the training process."""
-    try:
-        # Get training parameters from form
-        episodes = int(request.form.get('episodes', 100))
-        learning_rate = float(request.form.get('learning_rate', 0.001))
-        exploration_rate = float(request.form.get('exploration_rate', 0.1))
-        
-        # Start training process
-        training_results = agent.train(
-            num_episodes=episodes,
-            learning_rate=learning_rate,
-            exploration_rate=exploration_rate
-        )
-        
-        # Generate training visualization
-        plot_path = plot_training_progress(training_results)
-        
-        return jsonify({
-            'success': True,
-            'message': f'Training completed after {episodes} episodes',
-            'plot_path': plot_path,
-            'training_results': {
-                'avg_reward': float(np.mean(training_results['rewards'])),
-                'final_reward': float(training_results['rewards'][-1]),
-                'quest_complexity': float(np.mean(training_results['quest_complexity']))
-            }
-        })
-    except Exception as e:
-        logger.error(f"Training error: {str(e)}")
-        return jsonify({'success': False, 'message': f'Error during training: {str(e)}'})
 
 @app.route('/generate')
 def generate_page():
     """Page for generating new quests."""
-    return render_template('generate.html')
+    # Get any pre-selected parameters from URL
+    theme = request.args.get('theme', 'fantasy')
+    quest_type = request.args.get('type', None)
+    complexity = request.args.get('complexity', 0.5)
+    
+    try:
+        complexity = float(complexity)
+    except ValueError:
+        complexity = 0.5
+        
+    return render_template('generate.html', 
+                          theme=theme, 
+                          quest_type=quest_type, 
+                          complexity=complexity)
 
 @app.route('/api/generate_quest', methods=['POST'])
 def generate_quest():
@@ -76,16 +53,38 @@ def generate_quest():
         # Get generation parameters
         complexity = float(request.form.get('complexity', 0.5))
         theme = request.form.get('theme', 'fantasy')
+        quest_type = request.form.get('quest_type', None)
+        deterministic = request.form.get('deterministic', 'true').lower() == 'true'
+        save_quest_option = request.form.get('save', 'true').lower() == 'true'
+        
+        # Set random seed if provided
         seed = request.form.get('seed')
         if seed:
             seed = int(seed)
             np.random.seed(seed)
         
         # Generate quest
-        quest = agent.generate_quest(complexity=complexity, theme=theme)
+        quest = agent.generate_quest(complexity=complexity, theme=theme, deterministic=deterministic)
         
-        # Save generated quest
-        quest_id = save_quest(quest)
+        # If a specific quest type was requested, ensure the quest matches that type
+        if quest_type and quest['type'] != quest_type:
+            quest['type'] = quest_type
+            # Re-generate objectives based on the new type
+            objectives = quest_model._generate_objectives(
+                quest_type, 
+                len(quest['objectives']), 
+                theme,
+                quest['difficulty']
+            )
+            quest['objectives'] = objectives
+            
+            # Re-generate title based on the new type
+            quest['title'] = quest_model._generate_title(quest_type, theme)
+        
+        # Save generated quest if requested
+        quest_id = None
+        if save_quest_option:
+            quest_id = save_quest(quest)
         
         return jsonify({
             'success': True,
@@ -96,26 +95,66 @@ def generate_quest():
         logger.error(f"Quest generation error: {str(e)}")
         return jsonify({'success': False, 'message': f'Error generating quest: {str(e)}'})
 
-@app.route('/evaluate')
-def evaluate_page():
-    """Page for evaluating generated quests."""
+@app.route('/my-quests')
+def my_quests():
+    """Page for viewing saved quests."""
     quests = load_quests()
-    return render_template('evaluate.html', quests=quests)
+    return render_template('my_quests.html', quests=quests)
 
-@app.route('/api/evaluate_quest', methods=['POST'])
-def evaluate_quest():
-    """API endpoint to evaluate a quest."""
+@app.route('/api/delete_quest/<quest_id>', methods=['POST'])
+def delete_quest_api(quest_id):
+    """API endpoint to delete a quest."""
     try:
-        quest_data = request.json.get('quest')
-        evaluation = agent.evaluate_quest(quest_data)
-        
-        return jsonify({
-            'success': True,
-            'evaluation': evaluation
-        })
+        success = delete_quest(quest_id)
+        if success:
+            return jsonify({'success': True, 'message': 'Quest deleted successfully'})
+        else:
+            return jsonify({'success': False, 'message': 'Quest not found or could not be deleted'})
     except Exception as e:
-        logger.error(f"Quest evaluation error: {str(e)}")
-        return jsonify({'success': False, 'message': f'Error evaluating quest: {str(e)}'})
+        logger.error(f"Quest deletion error: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error deleting quest: {str(e)}'})
+
+@app.route('/api/export_quests', methods=['POST'])
+def export_quests():
+    """API endpoint to export quests to JSON."""
+    try:
+        quests = load_quests()
+        if not quests:
+            return jsonify({'success': False, 'message': 'No quests to export'})
+            
+        export_path = 'static/exports'
+        os.makedirs(export_path, exist_ok=True)
+        
+        timestamp = np.datetime64('now').astype(str).replace(':', '-').replace(' ', '_')
+        filename = f"quests_export_{timestamp}.json"
+        export_file = os.path.join(export_path, filename)
+        
+        success = export_quests_to_json(quests, export_file)
+        if success:
+            return jsonify({
+                'success': True, 
+                'message': 'Quests exported successfully',
+                'download_url': f"/static/exports/{filename}"
+            })
+        else:
+            return jsonify({'success': False, 'message': 'Error exporting quests'})
+    except Exception as e:
+        logger.error(f"Quest export error: {str(e)}")
+        return jsonify({'success': False, 'message': f'Error exporting quests: {str(e)}'})
+
+@app.route('/quest/<quest_id>')
+def view_quest(quest_id):
+    """Page for viewing a single quest."""
+    from utils.data_handler import load_quest
+    quest = load_quest(quest_id)
+    if not quest:
+        flash('Quest not found', 'error')
+        return redirect(url_for('my_quests'))
+        
+    # Generate radar chart
+    radar_chart = plot_single_quest_radar(quest)
+    
+    return render_template('view_quest.html', quest=quest, radar_chart=radar_chart)
 
 # Error handlers
 @app.errorhandler(404)
